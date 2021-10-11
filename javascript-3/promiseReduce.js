@@ -1,19 +1,22 @@
 async function promiseReduce(asyncFunctions, reduce, initialValue) {
-  const res = await Promise.all(asyncFunctions.map((func) => func()))
-  return res.reduce(reduce, initialValue)
+  return asyncFunctions.reduce(async (acc, asyncFunc) => {
+    const getAccValue = await acc
+    const getAsyncFuncValue = await asyncFunc()
+
+    return Promise.resolve(reduce(getAccValue, getAsyncFuncValue))
+  }, Promise.resolve(initialValue))
 }
 
 // Check
-const fn1 = () =>
-  new Promise((resolve) => {
-    console.log('fn1')
-    setTimeout(() => resolve(1), 1000)
-  })
-
-const fn2 = () => {
-  console.log('fn2')
-  return Promise.resolve(2)
+const fn1 = () => {
+  console.log('fn1')
+  return Promise.resolve(1)
 }
+
+const fn2 = () => new Promise(resolve => {
+  console.log('fn2')
+  setTimeout(() => resolve(2), 1000)
+})
 
 const result = await promiseReduce(
   [fn1, fn2],
